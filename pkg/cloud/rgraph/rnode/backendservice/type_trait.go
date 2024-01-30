@@ -32,7 +32,7 @@ type typeTrait struct {
 func (*typeTrait) FieldTraits(meta.Version) *api.FieldTraits {
 	dt := api.NewFieldTraits()
 	// Built-ins
-	dt.OutputOnly(api.Path{}.Pointer().Field("Fingerprint"))
+	dt.System(api.Path{}.Pointer().Field("Fingerprint"))
 
 	// [Output Only]
 	dt.OutputOnly(api.Path{}.Pointer().Field("CreationTimestamp"))
@@ -46,6 +46,8 @@ func (*typeTrait) FieldTraits(meta.Version) *api.FieldTraits {
 	dt.OutputOnly(api.Path{}.Pointer().Field("Iap").Field("Oauth2ClientSecretSha256"))
 	dt.OutputOnly(api.Path{}.Pointer().Field("CdnPolicy").Field("SignedUrlKeyNames"))
 
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("Backends"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("HealthChecks"))
 	// TODO: finish me
 	// TODO: handle alpha/beta
 
