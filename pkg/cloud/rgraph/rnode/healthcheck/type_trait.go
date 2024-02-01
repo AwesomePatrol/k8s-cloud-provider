@@ -24,7 +24,7 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
-// https://cloud.google.com/compute/docs/reference/rest/v1/HealthChecks
+// https://cloud.google.com/compute/docs/reference/rest/v1/healthChecks
 type typeTrait struct {
 	api.BaseTypeTrait[compute.HealthCheck, alpha.HealthCheck, beta.HealthCheck]
 }

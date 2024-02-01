@@ -36,12 +36,13 @@ import (
 )
 
 const (
-	meshURL = "https://networkservices.googleapis.com/v1alpha1/projects/katarzynalach-gke-dev/locations/global/meshes/mcs-mesh"
 	negName = "k8s1-3894226e-default-foo-backend-80-28ec9cf3"
 	zone    = "us-central1-c"
 )
 
 func TestTcpRoute(t *testing.T) {
+	meshURL := fmt.Sprintf("https://networkservices.googleapis.com/v1alpha1/projects/%s/locations/global/meshes/a8c112d", testFlags.project)
+
 	t.Parallel()
 	t.Logf("starting test")
 	ctx := context.Background()
@@ -196,6 +197,7 @@ func buildBackendService(graphBuilder *rgraph.Builder, name string, hcID, negID 
 }
 
 func buildTCPRoute(graphBuilder *rgraph.Builder, name string, bsID *cloud.ResourceID) (*cloud.ResourceID, error) {
+	meshURL := fmt.Sprintf("https://networkservices.googleapis.com/v1alpha1/projects/%s/locations/global/meshes/a8c112d", testFlags.project)
 	tcpID := tcproute.ID(testFlags.project, meta.GlobalKey(resourceName(name)))
 	tcpMutRes := tcproute.NewMutableTcpRoute(testFlags.project, tcpID.Key)
 
