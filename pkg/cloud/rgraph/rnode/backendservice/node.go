@@ -106,7 +106,7 @@ func (n *backendServiceNode) Actions(got rnode.Node) ([]exec.Action, error) {
 		return rnode.RecreateActions[compute.BackendService, alpha.BackendService, beta.BackendService](&ops{}, got, n, n.resource)
 
 	case rnode.OpUpdate:
-		return n.updateActions(got)
+		return rnode.UpdateActions[compute.BackendService, alpha.BackendService, beta.BackendService](&ops{}, got, n, n.resource)
 	}
 
 	return nil, fmt.Errorf("BackendServiceNode: invalid plan op %s", op)
@@ -116,19 +116,6 @@ func (n *backendServiceNode) Builder() rnode.Builder {
 	b := &builder{}
 	b.Init(n.ID(), n.State(), n.Ownership(), n.resource)
 	return b
-}
-
-func (n *backendServiceNode) updateActions(ngot rnode.Node) ([]exec.Action, error) {
-	details := n.Plan().Details()
-	if details == nil {
-		return nil, nodeErr("updateActions: node %s has not been planned", n.ID())
-	}
-	return []exec.Action{
-		// Action: Signal resource exists.
-		exec.NewExistsAction(n.ID()),
-		// Action: Do the updates.
-		&backendServiceUpdateAction{id: n.ID(), want: n.resource},
-	}, nil
 }
 
 /*
