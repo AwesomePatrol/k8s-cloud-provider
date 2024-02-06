@@ -62,27 +62,26 @@ func TestDiffAndActions(t *testing.T) {
 	makeBS := func(f func(x *compute.BackendService), flags int) BackendService {
 		t.Helper()
 
-		fr := NewMutableBackendService(id.ProjectID, id.Key)
-		fr.Access(func(x *compute.BackendService) {
+		bs := NewMutableBackendService(id.ProjectID, id.Key)
+		bs.Access(func(x *compute.BackendService) {
 			x.Name = "bs"
 		})
 		if f != nil {
-			err := fr.Access(f)
+			err := bs.Access(f)
 			if err != nil && flags&ignoreAccessErr == 0 {
 				t.Fatalf("Access() = %v, want nil", err)
 			}
 		}
-		r, err := fr.Freeze()
+		r, err := bs.Freeze()
 		if err != nil {
-			t.Fatalf("fr.Freeze() = %v, want nil", err)
+			t.Fatalf("bs.Freeze() = %v, want nil", err)
 		}
 		return r
 	}
 
 	baseFields := func(x *compute.BackendService) {
 		x.Backends = []*compute.Backend{{Group: negID.SelfLink(meta.VersionGA)}}
-		x.NullFields = []string{}
-		x.ForceSendFields = []string{
+		x.NullFields = []string{
 			"AffinityCookieTtlSec",
 			"CdnPolicy",
 			"CircuitBreakers",
@@ -95,12 +94,14 @@ func TestDiffAndActions(t *testing.T) {
 			"Description",
 			"EnableCDN",
 			"FailoverPolicy",
+			"HealthChecks",
 			"Iap",
 			"LoadBalancingScheme",
 			"LocalityLbPolicies",
 			"LocalityLbPolicy",
 			"LogConfig",
 			"MaxStreamDuration",
+			"Metadatas",
 			"Network",
 			"OutlierDetection",
 			"Port",
@@ -111,6 +112,9 @@ func TestDiffAndActions(t *testing.T) {
 			"SessionAffinity",
 			"Subsetting",
 			"TimeoutSec",
+			"UsedBy",
+		}
+		x.ForceSendFields = []string{
 			//"Backends",
 		}
 	}
@@ -135,11 +139,11 @@ func TestDiffAndActions(t *testing.T) {
 			}, ignoreAccessErr),
 			wantOp: rnode.OpNothing,
 			wantActions: []string{
-				"EventAction([Exists(compute/backendService:proj/bs)])",
+				"EventAction([Exists(compute/backendServices:proj/bs)])",
 			},
 		},
 		{
-			name: "update .Target",
+			name: "update .Backends",
 			bsw: makeBS(func(x *compute.BackendService) {
 				baseFields(x)
 			}, 0),
@@ -150,14 +154,16 @@ func TestDiffAndActions(t *testing.T) {
 			wantDiff: true,
 			wantOp:   rnode.OpUpdate,
 			wantActions: []string{
-				"EventAction([Exists(compute/backendService:proj/bs)])",
-				"BackendServiceUpdateAction(compute/backendService:proj/bs)",
+				"GenericUpdateAction(compute/backendServices:proj/bs)",
+				//"BackendServiceUpdateAction(compute/backendServices:proj/bs)",
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			bg := NewBuilderWithResource(tc.bsg)
 			bw := NewBuilderWithResource(tc.bsw)
+			bg.SetState(rnode.NodeExists)
+			bw.SetState(rnode.NodeExists)
 
 			ng, err := bg.Build()
 			if err != nil {
@@ -186,6 +192,7 @@ func TestDiffAndActions(t *testing.T) {
 			})
 			actions, err := nw.Actions(ng)
 			if gotActionsErr := err != nil; gotActionsErr != tc.wantActionsErr {
+				t.Log(nw.State(), ng.State())
 				t.Fatalf("Actions() = %v, want nil", err)
 			}
 			var strActions []string

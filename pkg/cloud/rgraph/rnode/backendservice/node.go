@@ -70,8 +70,8 @@ func (n *backendServiceNode) Diff(gotNode rnode.Node) (*rnode.PlanDetails, error
 		switch {
 		case delta.Path.Equal(api.Path{}.Pointer().Field("LoadBalancingScheme")):
 			planRecreate("LoadBalancingScheme change: '%v' -> '%v'", delta.A, delta.B)
-		default:
-			planRecreate("%s change: '%v' -> '%v'", delta.Path, delta.A, delta.B)
+			//default:
+			//	planRecreate("%s change: '%v' -> '%v'", delta.Path, delta.A, delta.B)
 		}
 	}
 

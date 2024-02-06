@@ -32,20 +32,23 @@ type typeTrait struct {
 func (*typeTrait) FieldTraits(meta.Version) *api.FieldTraits {
 	dt := api.NewFieldTraits()
 	// Built-ins
-	dt.OutputOnly(api.Path{}.Pointer().Field("Fingerprint"))
+	dt.System(api.Path{}.Pointer().Field("Fingerprint"))
 
 	// [Output Only]
 	dt.OutputOnly(api.Path{}.Pointer().Field("CreationTimestamp"))
-	dt.OutputOnly(api.Path{}.Pointer().Field("EdgeSecurityPolicy"))
+	dt.OutputOnly(api.Path{}.Pointer().Field("EdgeSecurityPolicy")) // has a separate update method
 	dt.OutputOnly(api.Path{}.Pointer().Field("Id"))
 	dt.OutputOnly(api.Path{}.Pointer().Field("Kind"))
 	dt.OutputOnly(api.Path{}.Pointer().Field("Region"))
-	dt.OutputOnly(api.Path{}.Pointer().Field("SecurityPolicy"))
+	dt.OutputOnly(api.Path{}.Pointer().Field("SecurityPolicy")) // has a separate update method
 	dt.OutputOnly(api.Path{}.Pointer().Field("SelfLink"))
 
 	dt.OutputOnly(api.Path{}.Pointer().Field("Iap").Field("Oauth2ClientSecretSha256"))
 	dt.OutputOnly(api.Path{}.Pointer().Field("CdnPolicy").Field("SignedUrlKeyNames"))
 
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("Backends"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("Backends").AnySliceIndex().Pointer().Field("BalancingMode"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("HealthChecks"))
 	// TODO: finish me
 	// TODO: handle alpha/beta
 
