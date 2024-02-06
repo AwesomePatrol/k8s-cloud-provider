@@ -94,7 +94,6 @@ func TestDiffAndActions(t *testing.T) {
 			"Description",
 			"EnableCDN",
 			"FailoverPolicy",
-			"HealthChecks",
 			"Iap",
 			"LoadBalancingScheme",
 			"LocalityLbPolicies",
@@ -105,7 +104,6 @@ func TestDiffAndActions(t *testing.T) {
 			"Network",
 			"OutlierDetection",
 			"Port",
-			"PortName",
 			"Protocol",
 			"SecuritySettings",
 			"ServiceBindings",
@@ -113,10 +111,9 @@ func TestDiffAndActions(t *testing.T) {
 			"Subsetting",
 			"TimeoutSec",
 			"UsedBy",
+			"PortName",
 		}
-		x.ForceSendFields = []string{
-			//"Backends",
-		}
+		x.ForceSendFields = []string{}
 	}
 
 	for _, tc := range []struct {
@@ -155,7 +152,37 @@ func TestDiffAndActions(t *testing.T) {
 			wantOp:   rnode.OpUpdate,
 			wantActions: []string{
 				"GenericUpdateAction(compute/backendServices:proj/bs)",
-				//"BackendServiceUpdateAction(compute/backendServices:proj/bs)",
+			},
+		},
+		{
+			name: "remove .Backends",
+			bsw: makeBS(func(x *compute.BackendService) {
+				baseFields(x)
+			}, 0),
+			bsg: makeBS(func(x *compute.BackendService) {
+				baseFields(x)
+				x.Backends = nil
+			}, ignoreAccessErr),
+			wantDiff: true,
+			wantOp:   rnode.OpUpdate,
+			wantActions: []string{
+				"GenericUpdateAction(compute/backendServices:proj/bs)",
+			},
+		},
+		{
+			name: "update .PortName",
+			bsw: makeBS(func(x *compute.BackendService) {
+				baseFields(x)
+			}, 0),
+			bsg: makeBS(func(x *compute.BackendService) {
+				baseFields(x)
+				x.NullFields = x.NullFields[:len(x.NullFields)-1]
+				x.PortName = "example-pn"
+			}, ignoreAccessErr),
+			wantDiff: true,
+			wantOp:   rnode.OpUpdate,
+			wantActions: []string{
+				"GenericUpdateAction(compute/backendServices:proj/bs)",
 			},
 		},
 	} {

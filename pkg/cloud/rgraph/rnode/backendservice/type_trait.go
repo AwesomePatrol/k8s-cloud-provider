@@ -49,7 +49,6 @@ func (*typeTrait) FieldTraits(meta.Version) *api.FieldTraits {
 	dt.AllowZeroValue(api.Path{}.Pointer().Field("Backends"))
 	dt.AllowZeroValue(api.Path{}.Pointer().Field("Backends").AnySliceIndex().Pointer().Field("BalancingMode"))
 	dt.AllowZeroValue(api.Path{}.Pointer().Field("HealthChecks"))
-	// TODO: finish me
 	// TODO: handle alpha/beta
 
 	return dt
