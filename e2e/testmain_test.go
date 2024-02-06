@@ -59,8 +59,6 @@ func init() {
 func parseFlagsOrDie() {
 	flag.Parse()
 
-	testFlags.project = "amistewicz-gke-dev"
-
 	if testFlags.project == "" {
 		fmt.Println("-project must be set")
 		os.Exit(1)
