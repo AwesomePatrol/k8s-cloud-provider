@@ -28,6 +28,8 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
+func nodeErr(s string, args ...any) error { return fmt.Errorf("backendService: "+s, args...) }
+
 type backendServiceNode struct {
 	rnode.NodeBase
 	resource BackendService
@@ -81,8 +83,8 @@ func (n *backendServiceNode) Diff(gotNode rnode.Node) (*rnode.PlanDetails, error
 		}, nil
 	}
 	return &rnode.PlanDetails{
-		Operation: rnode.OpRecreate,
-		Why:       "BackendService needs to be updated: " + strings.Join(details, ", "),
+		Operation: rnode.OpUpdate,
+		Why:       fmt.Sprintf("update in place (changed=TODO)"),
 		Diff:      diff,
 	}, nil
 }
@@ -104,7 +106,7 @@ func (n *backendServiceNode) Actions(got rnode.Node) ([]exec.Action, error) {
 		return rnode.RecreateActions[compute.BackendService, alpha.BackendService, beta.BackendService](&ops{}, got, n, n.resource)
 
 	case rnode.OpUpdate:
-		// TODO
+		return n.updateActions(got)
 	}
 
 	return nil, fmt.Errorf("BackendServiceNode: invalid plan op %s", op)
@@ -114,6 +116,23 @@ func (n *backendServiceNode) Builder() rnode.Builder {
 	b := &builder{}
 	b.Init(n.ID(), n.State(), n.Ownership(), n.resource)
 	return b
+}
+
+func (n *backendServiceNode) updateActions(ngot rnode.Node) ([]exec.Action, error) {
+	details := n.Plan().Details()
+	if details == nil {
+		return nil, nodeErr("updateActions: node %s has not been planned", n.ID())
+	}
+	got, ok := ngot.(*backendServiceNode)
+	if !ok {
+		return nil, nodeErr("updateActions: node %s has invalid type %T", n.ID(), ngot)
+	}
+	return []exec.Action{
+		// Action: Signal resource exists.
+		exec.NewExistsAction(n.ID()),
+		// Action: Do the updates.
+		&backendServiceUpdateAction{id: n.ID(), want: got},
+	}, nil
 }
 
 /*
