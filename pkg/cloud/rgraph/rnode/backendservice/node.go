@@ -123,15 +123,11 @@ func (n *backendServiceNode) updateActions(ngot rnode.Node) ([]exec.Action, erro
 	if details == nil {
 		return nil, nodeErr("updateActions: node %s has not been planned", n.ID())
 	}
-	got, ok := ngot.(*backendServiceNode)
-	if !ok {
-		return nil, nodeErr("updateActions: node %s has invalid type %T", n.ID(), ngot)
-	}
 	return []exec.Action{
 		// Action: Signal resource exists.
 		exec.NewExistsAction(n.ID()),
 		// Action: Do the updates.
-		&backendServiceUpdateAction{id: n.ID(), want: got},
+		&backendServiceUpdateAction{id: n.ID(), want: n.resource},
 	}, nil
 }
 

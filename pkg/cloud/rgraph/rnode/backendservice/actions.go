@@ -29,11 +29,12 @@ type backendServiceUpdateAction struct {
 	exec.ActionBase
 
 	id   *cloud.ResourceID
-	want *backendServiceNode
+	want BackendService
 }
 
 func (act *backendServiceUpdateAction) Run(ctx context.Context, cl cloud.Cloud) (exec.EventList, error) {
-	res, err := act.want.resource.ToGA()
+	// FIXME: use correct api for resource
+	res, err := act.want.ToGA()
 	if err != nil {
 		return nil, fmt.Errorf("backendServiceUpdateAction Run(%s): ToGA: %w", act.id, err)
 	}
