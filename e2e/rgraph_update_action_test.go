@@ -149,7 +149,7 @@ func hcGraph(hc *compute.HealthCheck) *rgraph.Graph {
 				},
 			},
 		},
-		Project: "katarzynalach-gke-dev",
+		Project: testFlags.project,
 	}
 	return ezg.Builder().MustBuild()
 }
@@ -169,7 +169,7 @@ func bsGraph(hc *compute.HealthCheck, bs *compute.BackendService) *rgraph.Graph 
 				},
 				Refs: []ez.Ref{{Field: "Healthchecks", To: hc.Name}}},
 		},
-		Project: "katarzynalach-gke-dev",
+		Project: testFlags.project,
 	}
 	return ezg.Builder().MustBuild()
 }
