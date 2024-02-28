@@ -46,9 +46,29 @@ func (*typeTrait) FieldTraits(meta.Version) *api.FieldTraits {
 	dt.OutputOnly(api.Path{}.Pointer().Field("Iap").Field("Oauth2ClientSecretSha256"))
 	dt.OutputOnly(api.Path{}.Pointer().Field("CdnPolicy").Field("SignedUrlKeyNames"))
 
-	dt.AllowZeroValue(api.Path{}.Pointer().Field("Backends"))
-	dt.AllowZeroValue(api.Path{}.Pointer().Field("Backends").AnySliceIndex().Pointer().Field("BalancingMode"))
+	// Are healthchecks or backends required?
 	dt.AllowZeroValue(api.Path{}.Pointer().Field("HealthChecks"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("Backends"))
+
+	// Fields that should stay optional
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("Iap"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("CdnPolicy"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("CircuitBreakers"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("ConnectionDraining"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("ConnectionTrackingPolicy"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("ConsistentHash"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("CustomRequestHeaders"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("CustomResponseHeaders"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("Description"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("FailoverPolicy"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("LocalityLbPolicies"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("LocalityLbPolicy"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("LogConfig"))
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("ServiceBindings"))
+
+	// Special field used by HUB only. Should likely be ignored
+	dt.AllowZeroValue(api.Path{}.Pointer().Field("Metadatas"))
+
 	// TODO: handle alpha/beta
 
 	return dt
