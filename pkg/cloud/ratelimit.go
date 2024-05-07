@@ -18,6 +18,7 @@ package cloud
 
 import (
 	"context"
+	"sync"
 	"time"
 )
 
@@ -167,7 +168,7 @@ type CompositeRateLimiter struct {
 // # Example
 //
 //	bsDefaultRL := /* backend service default rate limiter */
-//	bsGetListRL := /* backend service rate limiter for get and list operation in project-1 */
+//	bsGetListRL := /* backend service rate limiter for get and list operation */
 //
 //	rl := NewCompositeRateLimiter(defaultRL)
 //	rl.Register("BackendServices", "", bsDefaultRL)
@@ -242,4 +243,70 @@ func (c *CompositeRateLimiter) Accept(ctx context.Context, rlk *RateLimitKey) er
 
 // Observe does nothing.
 func (*CompositeRateLimiter) Observe(context.Context, error, *RateLimitKey) {
+}
+
+type RateLimiterFactory = func() RateLimiter
+
+func NopRateLimiterFactory() RateLimiterFactory {
+	return func() RateLimiter {
+		return &NopRateLimiter{}
+	}
+}
+
+func MinimumRateLimiterFactory(rl RateLimiterFactory, min time.Duration) RateLimiterFactory {
+	return func() RateLimiter {
+		return &MinimumRateLimiter{
+			RateLimiter: rl(),
+			Minimum:     min,
+		}
+	}
+}
+
+func TickerRateLimiterFactory(limit int, interval time.Duration) RateLimiterFactory {
+	return func() RateLimiter {
+		return NewTickerRateLimiter(limit, interval)
+	}
+}
+
+func SharedRateLimiterFactory(shared RateLimiter) RateLimiterFactory {
+	return func() RateLimiter {
+		return shared
+	}
+}
+
+type PerProjectRateLimiter struct {
+	base     RateLimiterFactory
+	projects *sync.Map
+}
+
+func NewPerProjectRateLimiter(base RateLimiterFactory) *PerProjectRateLimiter {
+	return &PerProjectRateLimiter{
+		base:     base,
+		projects: new(sync.Map),
+	}
+}
+
+// Accept passes the call to an instance of a rate limiter for project provided
+// in rlk. It allocates a new rate limiter for a project on the first call.
+func (pp *PerProjectRateLimiter) Accept(ctx context.Context, rlk *RateLimitKey) error {
+	project := ""
+	if rlk != nil {
+		project = rlk.ProjectID
+	}
+	// Use NopRateLimiter for a brief time when a new rate limiter is allocated.
+	// Otherwise, there would be a possibility to allocate multiple (identical)
+	// rate limiters while storing only a single one.
+	// Using plain mutex would unnecessarily serialize execution of users of
+	// this rate limiter.
+	promise := &NopRateLimiter{}
+	rl, loaded := pp.projects.LoadOrStore(project, promise)
+	if !loaded {
+		rl = pp.base()
+		pp.projects.Store(project, rl)
+	}
+	return rl.(RateLimiter).Accept(ctx, rlk)
+}
+
+// Observe does nothing.
+func (*PerProjectRateLimiter) Observe(context.Context, error, *RateLimitKey) {
 }

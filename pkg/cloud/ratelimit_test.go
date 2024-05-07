@@ -228,3 +228,70 @@ func TestCompositeRateLimiter_Table(t *testing.T) {
 		t.Errorf("getNetRL served %d calls, want = 3", *getNetRL)
 	}
 }
+
+func TestPerProjectRateLimiter_Shared(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	crl := new(CountingRateLimiter)
+	pp := NewPerProjectRateLimiter(SharedRateLimiterFactory(crl))
+
+	pp.Accept(ctx, &RateLimitKey{ProjectID: "first-project"})
+	if *crl != 1 {
+		t.Errorf("expected call to crl for %q", "first-project")
+	}
+	pp.Accept(ctx, nil)
+	if *crl != 2 {
+		t.Errorf("expected call to crl for nil")
+	}
+	pp.Accept(ctx, &RateLimitKey{ProjectID: ""})
+	if *crl != 3 {
+		t.Errorf("expected call to crl for empty string")
+	}
+	pp.Accept(ctx, &RateLimitKey{ProjectID: "second-project"})
+	if *crl != 4 {
+		t.Errorf("expected call to crl for %q", "second-project")
+	}
+}
+
+func TestPerProjectRateLimiter_Individual(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	crls := make([]*CountingRateLimiter, 0)
+
+	factory := func() RateLimiter {
+		crl := new(CountingRateLimiter)
+		crls = append(crls, crl)
+		return crl
+	}
+	pp := NewPerProjectRateLimiter(factory)
+	pp.Accept(ctx, &RateLimitKey{ProjectID: "first-project"})
+	if len(crls) != 1 {
+		t.Errorf("expected 1st crl to be created")
+	}
+	if *crls[0] != 1 {
+		t.Errorf("unexpected calls to crl for first-project: got=%d, want=1", *crls[0])
+	}
+	pp.Accept(ctx, nil)
+	if len(crls) != 2 {
+		t.Errorf("expected 2nd crl to be created")
+	}
+	if *crls[1] != 1 {
+		t.Errorf("unexpected calls to crl for nil: got=%d, want=1", *crls[1])
+	}
+	pp.Accept(ctx, &RateLimitKey{ProjectID: ""})
+	if len(crls) != 2 {
+		t.Errorf("expected no new crls to be created")
+	}
+	if *crls[1] != 2 {
+		t.Errorf("unexpected calls to crl for empty string: got=%d, want=2", *crls[1])
+	}
+	pp.Accept(ctx, &RateLimitKey{ProjectID: "second-project"})
+	if len(crls) != 3 {
+		t.Errorf("expected 3rd crl to be created")
+	}
+	if *crls[2] != 1 {
+		t.Errorf("unexpected calls to crl for nil: got=%d, want=1", *crls[2])
+	}
+}
