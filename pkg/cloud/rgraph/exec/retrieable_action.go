@@ -30,7 +30,7 @@ var _ Action = (*retriableAction)(nil)
 
 // retriableAction is a decorator to the action adding retry mechanism
 type retriableAction struct {
-	a             Action
+	Action
 	retryProvider RetryProvider
 }
 
@@ -39,24 +39,13 @@ func NewRetriableAction(a Action, rp RetryProvider) Action {
 	return &retriableAction{a, rp}
 }
 
-// CanRun indicate if all preconditions to run Action are met and action can be
-// executed
-func (ra *retriableAction) CanRun() bool {
-	return ra.a.CanRun()
-}
-
-// Signal notifies parents that Action was executed
-func (ra *retriableAction) Signal(e Event) bool {
-	return ra.a.Signal(e)
-}
-
 // Run executes Action. If error is returned retry provider checks if Action
 // should be rerun
 func (ra *retriableAction) Run(ctx context.Context, c cloud.Cloud) (EventList, error) {
 	var err error
 	var events EventList
 	for run := true; run; run = ra.retryProvider.IsRetriable(err) && ctx.Err() == nil {
-		events, err = ra.a.Run(ctx, c)
+		events, err = ra.Action.Run(ctx, c)
 		if err == nil {
 			return events, err
 		}
@@ -65,22 +54,7 @@ func (ra *retriableAction) Run(ctx context.Context, c cloud.Cloud) (EventList, e
 	return events, err
 }
 
-// DryRun returns post action events
-func (ra *retriableAction) DryRun() EventList {
-	return ra.a.DryRun()
-}
-
 // String wraps Action name with retry information
 func (ra *retriableAction) String() string {
-	return ra.a.String() + " with retry"
-}
-
-// PendingEvents returns a list of events the Action is waiting to complete
-func (ra *retriableAction) PendingEvents() EventList {
-	return ra.a.PendingEvents()
-}
-
-// Metadata returns wrapped Action's metadata
-func (ra *retriableAction) Metadata() *ActionMetadata {
-	return ra.a.Metadata()
+	return ra.Action.String() + " with retry"
 }
