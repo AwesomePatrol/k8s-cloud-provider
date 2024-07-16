@@ -152,6 +152,8 @@ func (s *Service) WaitForCompletion(ctx context.Context, genericOp interface{}) 
 	return s.pollOperation(ctx, op)
 }
 
+var polledThird int
+
 // pollOperation calls operations.isDone until the function comes back true or context is Done.
 // If an error occurs retrieving the operation, the loop will continue until the context is done.
 // This is to prevent a transient error from bubbling up to controller-level logic.
@@ -171,6 +173,13 @@ func (s *Service) pollOperation(ctx context.Context, op operation) error {
 
 		pollCount++
 		klog.V(5).Infof("op.isDone(%v) waiting; op = %v, poll count = %d (%v elapsed)", ctx, op, pollCount, time.Since(start))
+		if pollCount == 3 {
+			polledThird++
+			if polledThird == 2 {
+				return fmt.Errorf("429 could happen here")
+			}
+		}
+
 		s.RateLimiter.Accept(ctx, op.rateLimitKey())
 		switch done, err := op.isDone(ctx); {
 		case err != nil:

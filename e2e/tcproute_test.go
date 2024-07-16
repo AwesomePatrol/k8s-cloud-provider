@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud"
 	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud/cerrors"
@@ -395,6 +396,17 @@ func TestRgraphTCPRouteAddBackends(t *testing.T) {
 	checkAppNetTCPRoute(t, ctx, theCloud, tcprID.Key.Name, meshURL, bsID, bsID2)
 }
 
+type fakeRetryProvider struct {
+	ctr        int
+	retryLimit int
+	backOff    time.Duration
+}
+
+func (frp *fakeRetryProvider) IsRetriable(error) (bool, time.Duration) {
+	frp.ctr++
+	return frp.ctr < frp.retryLimit, frp.backOff
+}
+
 func actionName(actionType exec.ActionType, id *cloud.ResourceID) string {
 	return fmt.Sprintf("Generic%sAction(%s)", actionType, id)
 }
@@ -419,6 +431,11 @@ func processGraphAndExpectActions(t *testing.T, graphBuilder *rgraph.Builder, ex
 	err = expectActions(result.Actions, expectedActions)
 	if err != nil {
 		t.Fatalf("expectActions(_, _) = %v, want nil", err)
+	}
+
+	frp := &fakeRetryProvider{retryLimit: 100, backOff: 10 * time.Millisecond}
+	for i, act := range result.Actions {
+		result.Actions[i] = exec.NewRetriableAction(act, frp.IsRetriable)
 	}
 
 	ex, err := exec.NewSerialExecutor(theCloud, result.Actions)
